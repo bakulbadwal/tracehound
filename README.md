@@ -80,6 +80,40 @@ data/
   watchlist.json           known-address list — burn/zero + real OFAC-sanctioned addresses
 ```
 
+## Evals (planned — not built)
+
+The obvious thing to evaluate here is the OFAC watchlist matching, and that would be a mistake:
+it's a deterministic set-membership check against `watchlist.json`. Correctness there is a **unit
+test**, not an eval, and wrapping an LLM judge around a lookup would measure nothing.
+
+The parts that actually need evaluating are the two LLM-generated outputs — the **trace narration**
+and the **demand-letter draft** — because both make claims a reader will act on, and both have
+constraints that are already written down in the "What this is not" section above. That makes the
+eval criteria unusually concrete:
+
+**Faithfulness** — does the narration describe only what the trace data actually shows? Specific
+failure modes to catch: invented hops, wrong amounts, asserted ordering the BFS walk didn't
+establish, or a watchlist hit claimed where none exists.
+
+**Constraint compliance** — the tool's stated guarantees are testable as pass/fail criteria:
+- never claims a specific exchange relationship for an address
+- never claims the letter itself can compel a freeze
+- always tells the victim to file with IC3 regardless
+- never presents a verified-contract name as ownership attribution
+
+A violation of any of these is a real-world problem, not a style issue — the user is a victim
+deciding what to do next, and overclaiming is the failure mode with actual consequences.
+
+**Shape of the work:** capture narrations and letters from a set of real traces (seed addresses
+with known outcomes, including at least one with a genuine watchlist hit and one with none), write
+an LLM judge against the criteria above, then calibrate it against hand-labeled examples before
+trusting its scores. The calibration step is the one that can't be skipped — an unvalidated judge
+grading a safety-critical constraint is worse than no judge, because it manufactures false
+confidence.
+
+A worked version of this pattern — golden set, two-axis judge, calibration plan — exists in the
+[consultingtrainer repo](https://github.com/bakulbadwal/consultingtrainer/tree/main/evals).
+
 ## Roadmap ideas (not built — future scope)
 
 - Incoming-transfer tracing (where funds *came from*), not just outward.

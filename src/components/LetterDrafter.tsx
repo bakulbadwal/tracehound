@@ -46,17 +46,28 @@ export function LetterDrafter({ graph, isSample }: { graph: TraceGraph; isSample
   }
 
   return (
-    <div className="panel">
-      <div className="panel-label">Draft demand / freeze-request letter</div>
+    <section className="panel letter-panel">
+      <div className="panel-heading-row">
+        <div>
+          <div className="section-kicker">Draft correspondence</div>
+          <h2>Demand or freeze-request letter</h2>
+        </div>
+        <div className="record-label">Evidence-linked draft</div>
+      </div>
+      <p className="panel-intro">
+        Add user-reported loss information, then generate a working draft grounded in the trace record.
+      </p>
       {isSample && (
-        <div className="sample-banner" style={{ marginBottom: 14 }}>
-          SAMPLE TRACE LOADED — letter will draft from fabricated demo data
+        <div className="sample-banner sample-banner-compact">
+          <strong>Sample trace loaded</strong>
+          <span>The letter will use fabricated demonstration data.</span>
         </div>
       )}
       <form onSubmit={draft} className="form-grid">
         <div className="field">
-          <label className="field-label">Loss amount</label>
+          <label className="field-label" htmlFor="loss-amount">Reported loss amount</label>
           <input
+            id="loss-amount"
             type="text"
             placeholder="e.g. 12500"
             value={lossAmount}
@@ -65,8 +76,8 @@ export function LetterDrafter({ graph, isSample }: { graph: TraceGraph; isSample
           />
         </div>
         <div className="field">
-          <label className="field-label">Currency</label>
-          <select value={lossCurrency} onChange={(e) => setLossCurrency(e.target.value)}>
+          <label className="field-label" htmlFor="loss-currency">Currency</label>
+          <select id="loss-currency" value={lossCurrency} onChange={(e) => setLossCurrency(e.target.value)}>
             <option value="USD">USD</option>
             <option value="ETH">ETH</option>
             <option value="USDC">USDC</option>
@@ -74,8 +85,9 @@ export function LetterDrafter({ graph, isSample }: { graph: TraceGraph; isSample
           </select>
         </div>
         <div className="field">
-          <label className="field-label">IC3 complaint # (optional)</label>
+          <label className="field-label" htmlFor="ic3-number">IC3 complaint # (optional)</label>
           <input
+            id="ic3-number"
             type="text"
             placeholder="I-2026..."
             value={ic3Number}
@@ -95,13 +107,14 @@ export function LetterDrafter({ graph, isSample }: { graph: TraceGraph; isSample
       </div>
       {error && <div className="error">{error}</div>}
       {letter && (
-        <>
-          <div className="narrative" style={{ marginTop: 16, whiteSpace: "pre-wrap" }}>
+        <div className="draft-output">
+          <div className="section-kicker">Generated draft</div>
+          <div className="narrative letter-copy">
             {letter}
           </div>
           <EvidenceAppendix evidence={evidence} />
-        </>
+        </div>
       )}
-    </div>
+    </section>
   );
 }

@@ -6,14 +6,12 @@ export function SiteHeader() {
           <div className="wordmark-glyph">TH</div>
           <div>
             <div className="wordmark-text">TraceHound</div>
-            <div className="wordmark-tag">on-chain investigation agent</div>
+            <div className="wordmark-tag">Digital forensics case desk</div>
           </div>
         </div>
-        <div className="chain-pills">
-          <span className="chain-pill">ETH</span>
-          <span className="chain-pill">BNB</span>
-          <span className="chain-pill">POLYGON</span>
-          <span className="chain-pill">ARBITRUM</span>
+        <div className="header-context" aria-label="Workspace capabilities">
+          <span className="header-status"><span className="status-dot" />Public-chain evidence workspace</span>
+          <span className="header-chains">ETH · BNB · POLYGON · ARBITRUM</span>
         </div>
       </div>
     </header>

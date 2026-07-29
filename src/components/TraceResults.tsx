@@ -33,46 +33,55 @@ export function TraceResults({ graph, chain }: { graph: TraceGraph; chain: Chain
         </div>
       </div>
 
-      <div className="panel">
-        <div className="panel-label">
-          Trace graph{graph.truncated ? " — fan-out truncated at some nodes" : ""}
+      <section className="panel ledger-panel">
+        <div className="panel-heading-row ledger-heading">
+          <div>
+            <div className="section-kicker">Open trace ledger</div>
+            <h2>Address record</h2>
+          </div>
+          <div className={`record-label${graph.truncated ? " record-label-caution" : ""}`}>
+            {graph.truncated ? "Fan-out truncated" : "All returned nodes"}
+          </div>
         </div>
-        <table className="trace-table">
-          <thead>
-            <tr>
-              <th>Hop</th>
-              <th>Address</th>
-              <th>Flag</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((node) => (
-              <tr key={node.address}>
-                <td><span className="depth-pill">{node.depth === 0 ? "seed" : `+${node.depth}`}</span></td>
-                <td>
-                  <a
-                    className="addr-link"
-                    href={`${chain.explorerBase}/address/${node.address}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    title={node.address}
-                  >
-                    {shorten(node.address)}
-                  </a>
-                </td>
-                <td>
-                  {node.contractName && <span className="badge contract">{node.contractName}</span>}
-                  {node.watchlistHit && (
-                    <span className={`badge${node.watchlistHit.category === "burn" ? " burn" : ""}`}>
-                      {node.watchlistHit.label}
-                    </span>
-                  )}
-                </td>
+        <div className="table-scroll">
+          <table className="trace-table">
+            <thead>
+              <tr>
+                <th>Hop</th>
+                <th>Address</th>
+                <th>Classification</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {sorted.map((node) => (
+                <tr key={node.address}>
+                  <td><span className="depth-pill">{node.depth === 0 ? "Seed" : `+${node.depth}`}</span></td>
+                  <td>
+                    <a
+                      className="addr-link"
+                      href={`${chain.explorerBase}/address/${node.address}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={node.address}
+                    >
+                      {shorten(node.address)}
+                    </a>
+                  </td>
+                  <td>
+                    {!node.contractName && !node.watchlistHit && <span className="classification-clear">No indicator</span>}
+                    {node.contractName && <span className="badge contract">{node.contractName}</span>}
+                    {node.watchlistHit && (
+                      <span className={`badge${node.watchlistHit.category === "burn" ? " burn" : ""}`}>
+                        {node.watchlistHit.label}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </>
   );
 }

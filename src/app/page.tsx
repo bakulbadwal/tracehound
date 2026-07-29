@@ -11,6 +11,10 @@ import { LetterDrafter } from "@/components/LetterDrafter";
 import { sampleGraph, sampleChain, sampleNarrative, sampleEvidence } from "@/lib/sampleTrace";
 import { EvidenceRecord } from "@/lib/evidence";
 
+function shorten(address: string) {
+  return `${address.slice(0, 8)}…${address.slice(-6)}`;
+}
+
 export default function Home() {
   const [address, setAddress] = useState("");
   const [chainKey, setChainKey] = useState("ethereum");
@@ -76,26 +80,28 @@ export default function Home() {
     <>
       <SiteHeader />
       <div className="wrap">
-        <div className="hero">
-          <div className="eyebrow">
-            <span className="eyebrow-dot" />
-            LIVE ON-CHAIN DATA
-          </div>
-          <h1>Trace where exploited funds moved</h1>
+        <section className="hero" aria-labelledby="page-title">
+          <div className="section-kicker">New investigation</div>
+          <h1 id="page-title">Trace blockchain flows. Preserve the record.</h1>
           <p className="subtitle">
-            Give TraceHound a seed address and it walks live outgoing transfers hop by hop,
-            flags anything on your watchlist, and has an agent narrate the trace in plain
-            English. Built as a scoped, honest MVP — see the scope note below before treating
-            any output as authoritative.
+            Follow outgoing transfers from a seed address, surface watchlist matches, and
+            assemble an evidence-linked brief for further investigation.
           </p>
-        </div>
+        </section>
 
-        <form onSubmit={runTrace} className="panel">
-          <div className="panel-label">New trace</div>
+        <form onSubmit={runTrace} className="panel intake-panel">
+          <div className="panel-heading-row">
+            <div>
+              <div className="section-kicker">Trace intake</div>
+              <h2>Open a blockchain trace</h2>
+            </div>
+            <div className="record-label">Public-chain record</div>
+          </div>
           <div className="form-grid">
             <div className="field field-address">
-              <label className="field-label">Seed address</label>
+              <label className="field-label" htmlFor="seed-address">Seed address</label>
               <input
+                id="seed-address"
                 type="text"
                 placeholder="0x..."
                 value={address}
@@ -104,8 +110,8 @@ export default function Home() {
               />
             </div>
             <div className="field">
-              <label className="field-label">Chain</label>
-              <select value={chainKey} onChange={(e) => setChainKey(e.target.value)}>
+              <label className="field-label" htmlFor="chain">Chain</label>
+              <select id="chain" value={chainKey} onChange={(e) => setChainKey(e.target.value)}>
                 <option value="ethereum">Ethereum</option>
                 <option value="bsc">BNB Chain</option>
                 <option value="polygon">Polygon</option>
@@ -113,8 +119,8 @@ export default function Home() {
               </select>
             </div>
             <div className="field">
-              <label className="field-label">Depth</label>
-              <select value={depth} onChange={(e) => setDepth(Number(e.target.value))}>
+              <label className="field-label" htmlFor="depth">Max depth</label>
+              <select id="depth" value={depth} onChange={(e) => setDepth(Number(e.target.value))}>
                 <option value={1}>1 hop</option>
                 <option value={2}>2 hops</option>
                 <option value={3}>3 hops</option>
@@ -125,35 +131,77 @@ export default function Home() {
           </div>
           <div className="actions-row">
             <button type="submit" className="primary" disabled={loading}>
-              {loading ? "Tracing…" : "Run trace"}
+              {loading ? "Tracing…" : "Trace address"}
             </button>
             <button type="button" className="ghost" onClick={loadSample} disabled={loading}>
-              View sample report
+              Load sample case
             </button>
           </div>
           {error && <div className="error">{error}</div>}
         </form>
 
         {isSample && (
-          <div className="sample-banner">SAMPLE DATA — fabricated for demonstration, not a real trace</div>
+          <div className="sample-banner" role="status">
+            <strong>Sample data</strong>
+            <span>Fabricated for demonstration only. This is not a real trace.</span>
+          </div>
         )}
 
-        {graph && chain && <TraceGraphView graph={graph} chain={chain} />}
-        {graph && chain && <TraceResults graph={graph} chain={chain} />}
-        {(narrative || narrating) && (
-          <NarrativeReport narrative={narrative} evidence={narrativeEvidence} loading={narrating} />
+        {graph && chain && (
+          <>
+            <section className="case-strip" aria-label="Active trace record">
+              <div className="case-strip-primary">
+                <span className="case-status"><span className="status-dot" />Active trace</span>
+                <span className="case-seed" title={graph.seed}>{shorten(graph.seed)}</span>
+              </div>
+              <div className="case-field">
+                <span>Chain</span>
+                <strong>{chain.name}</strong>
+              </div>
+              <div className="case-field">
+                <span>Depth</span>
+                <strong>{Math.max(0, ...graph.nodes.map((node) => node.depth))} hops</strong>
+              </div>
+              <div className="case-field">
+                <span>Evidence</span>
+                <strong>{narrativeEvidence.length || "Pending"}</strong>
+              </div>
+              <div className="case-field">
+                <span>Fan-out</span>
+                <strong className={graph.truncated ? "state-caution" : "state-clear"}>
+                  {graph.truncated ? "Truncated" : "Complete"}
+                </strong>
+              </div>
+            </section>
+
+            <section className="investigation-shell" aria-label="Investigation workspace">
+              <div className="investigation-graph">
+                <TraceGraphView graph={graph} chain={chain} />
+              </div>
+              <aside className="investigation-rail">
+                {(narrative || narrating) && (
+                  <NarrativeReport narrative={narrative} evidence={narrativeEvidence} loading={narrating} />
+                )}
+              </aside>
+              <div className="investigation-ledger">
+                <TraceResults graph={graph} chain={chain} />
+              </div>
+            </section>
+          </>
         )}
         {graph && <LetterDrafter graph={graph} isSample={isSample} />}
 
-        <div className="scope-footer">
-          <strong>Scope note:</strong> TraceHound follows live public on-chain transfers, narrates
-          them with an LLM agent, and can draft a demand letter from the trace facts — it does not
-          have a proprietary attribution database, cannot demix cross-chain/mixer flows, and
-          cannot itself freeze funds (only an exchange&apos;s compliance team can do that, and
-          usually only with law enforcement involved). Treat output as a fast first look and a
-          drafting aid, not a verified forensic report or legal advice. Full scope is documented
-          in the repo README.
-        </div>
+        <footer className="scope-footer">
+          <div className="section-kicker">Scope record</div>
+          <strong>Investigative aid, not an authoritative forensic report.</strong>
+          <p>
+            TraceHound follows live public on-chain transfers, narrates them with an LLM agent,
+            and can draft a demand letter from trace facts. It does not have a proprietary
+            attribution database, cannot demix cross-chain or mixer flows, and cannot freeze
+            funds. Treat output as a fast first look and drafting aid, not verified attribution
+            or legal advice. Full scope is documented in the repository README.
+          </p>
+        </footer>
       </div>
     </>
   );

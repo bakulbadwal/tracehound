@@ -75,8 +75,14 @@ export function TraceGraphView({ graph, chain }: { graph: TraceGraph; chain: Cha
   const viewBox = `${-(maxRadius + pad)} ${-(maxRadius + pad)} ${size} ${size}`;
 
   return (
-    <div className="panel">
-      <div className="panel-label">Trace graph — hop {Math.max(0, ...graph.nodes.map((n) => n.depth))} deep</div>
+    <section className="panel graph-panel">
+      <div className="graph-header">
+        <div>
+          <div className="section-kicker section-kicker-inverse">Transaction graph</div>
+          <h2>Outgoing flow by hop</h2>
+        </div>
+        <div className="graph-depth">Depth {Math.max(0, ...graph.nodes.map((n) => n.depth))}</div>
+      </div>
       <div className="graph-wrap">
         <svg viewBox={viewBox} className="graph-svg" role="img" aria-label="On-chain trace graph">
           <g>
@@ -134,11 +140,11 @@ export function TraceGraphView({ graph, chain }: { graph: TraceGraph; chain: Cha
         </svg>
       </div>
       <div className="graph-legend">
-        <span><span className="legend-dot legend-seed" />seed</span>
-        <span><span className="legend-dot legend-flagged" />watchlist hit</span>
-        <span><span className="legend-dot legend-contract" />verified contract</span>
-        <span><span className="legend-dot legend-normal" />address</span>
+        <span><span className="legend-dot legend-seed" />Seed</span>
+        <span><span className="legend-dot legend-flagged" />Watchlist hit</span>
+        <span><span className="legend-dot legend-contract" />Verified contract</span>
+        <span><span className="legend-dot legend-normal" />Address</span>
       </div>
-    </div>
+    </section>
   );
 }

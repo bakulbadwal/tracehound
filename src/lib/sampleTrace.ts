@@ -1,5 +1,6 @@
 import { TraceGraph } from "./trace";
 import { Chain } from "./etherscan";
+import { buildTraceEvidence } from "./evidence";
 
 // Fabricated data for demoing the UI without live API keys. Addresses are placeholder
 // patterns (repeating hex digits), not real wallets — this must never be presented
@@ -42,11 +43,14 @@ export const sampleGraph: TraceGraph = {
   ],
 };
 
-export const sampleNarrative = `SAMPLE REPORT — fabricated data for UI demonstration only, not a real trace.
+export const sampleEvidence = buildTraceEvidence(sampleGraph);
+
+export const sampleNarrative = `SAMPLE REPORT — fabricated data for UI demonstration only, not a real trace. [E1]
 
 Starting from the seed address, funds split across two paths within the first hop: roughly
-5 ETH moved to one address, while 12,000 USDC moved to a second. One second-hop address
+5 ETH moved to one address, while 12,000 USDC moved to a second. [E2][E3] One second-hop address
 matches a SAMPLE watchlist entry (labeled "flagged mixer" for demo purposes only — this is
-not a real classification). No other addresses in this walk matched anything on the
-watchlist. This narrative is illustrative; run a real trace with your own API keys to see
-actual output.`;
+not a real classification). [E6] No other addresses in this walk matched anything on the
+watchlist. [E1] The trace also encountered the verified contract name SAMPLE_Router
+(illustrative); that name does not establish ownership. [E7] This narrative is illustrative;
+run a real trace with your own API keys to see actual output.`;

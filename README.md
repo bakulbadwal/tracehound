@@ -16,7 +16,8 @@ Give it a seed address (e.g. an exploited contract or a hacker's wallet), and it
    ETH/ARB/BSC/USDC/USDT-on-EVM), pulled directly from the U.S. Treasury's official SDN list.
    Refresh it any time with `npm run update-watchlist`.
 3. Has an LLM agent narrate the trace in plain English — this narration step, not the hop-walk,
-   is the actual differentiator over clicking through a block explorer by hand.
+   is the actual differentiator over clicking through a block explorer by hand. Every material
+   model claim is required to cite a stable evidence record displayed with the output.
 4. Looks up each address's **verified smart contract name** (free, via Etherscan's official
    `getsourcecode` endpoint) — e.g. flagging that a hop went to `UniswapV2Router02`, not a
    person's wallet. This is deliberately different from exchange/mixer attribution: it's an
@@ -70,6 +71,7 @@ src/
     api/draft-letter/     LLM-drafted demand/freeze-request letter from trace facts
   lib/
     etherscan.ts           Etherscan v2 API client (tx history + verified-contract lookup)
+    evidence.ts            stable evidence records shared by prompts, UI, and evals
     trace.ts               BFS outward walk, fan-out capping, watchlist + contract enrichment
     watchlist.ts            watchlist lookup
   components/
@@ -78,9 +80,13 @@ scripts/
   update-watchlist.js      pulls the real OFAC SDN advanced XML and refreshes watchlist.json
 data/
   watchlist.json           known-address list — burn/zero + real OFAC-sanctioned addresses
+evals/
+  golden-set.json          synthetic clean and adversarial model-output cases
+  lib/evaluator.mjs        deterministic policy and evidence checker
+  judge-prompt.md          complementary semantic rubric (not yet calibrated)
 ```
 
-## Evals (planned — not built)
+## Evals
 
 The obvious thing to evaluate here is the OFAC watchlist matching, and that would be a mistake:
 it's a deterministic set-membership check against `watchlist.json`. Correctness there is a **unit
@@ -101,18 +107,25 @@ establish, or a watchlist hit claimed where none exists.
 - always tells the victim to file with IC3 regardless
 - never presents a verified-contract name as ownership attribution
 
-A violation of any of these is a real-world problem, not a style issue — the user is a victim
-deciding what to do next, and overclaiming is the failure mode with actual consequences.
+A violation of any of these is a real-world problem, not a style issue — the user may act on the
+output, and overclaiming is the failure mode with actual consequences.
 
-**Shape of the work:** capture narrations and letters from a set of real traces (seed addresses
-with known outcomes, including at least one with a genuine watchlist hit and one with none), write
-an LLM judge against the criteria above, then calibrate it against hand-labeled examples before
-trusting its scores. The calibration step is the one that can't be skipped — an unvalidated judge
-grading a safety-critical constraint is worse than no judge, because it manufactures false
-confidence.
+The built evaluation layer has two parts:
 
-A worked version of this pattern — golden set, two-axis judge, calibration plan — exists in the
-[consultingtrainer repo](https://github.com/bakulbadwal/consultingtrainer/tree/main/evals).
+1. An **executable deterministic gate** over a synthetic golden set. It catches invented on-chain
+   identifiers, false watchlist claims, missing/dangling evidence citations, unsupported owner or
+   exchange attribution, verified-contract/ownership conflation, missing truncation disclosure,
+   and unsafe letter claims. Run it with `npm test` and `npm run eval`.
+2. A **semantic judge rubric and calibration plan** for failures that pattern checks cannot reliably
+   understand. The judge is designed but deliberately not represented as validated. It must be
+   calibrated against independently hand-labeled examples before its scores can gate releases.
+
+Runtime output now uses the same evidence contract: prompts receive numbered evidence records,
+material claims must cite them, and the UI exposes the full evidence appendix. That does not make
+the model infallible; it makes claims inspectable and gives the evals a concrete contract to test.
+
+See [`evals/README.md`](evals/README.md) and
+[`evals/validation-plan.md`](evals/validation-plan.md) for scope and calibration requirements.
 
 ## Roadmap ideas (not built — future scope)
 

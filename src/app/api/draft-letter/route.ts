@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { TraceGraph } from "@/lib/trace";
+import { buildLetterEvidence } from "@/lib/evidence";
 
 // Drafts a demand/freeze-request letter from real trace facts. This is deliberately scoped:
 // no claim of exchange relationships, no auto-send, no guarantee of a freeze. Real letters of
@@ -29,23 +30,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const flaggedNodes = graph.nodes.filter((n) => n.watchlistHit && n.watchlistHit.category !== "burn");
-  const facts = {
-    seedAddress: graph.seed,
-    chainId: graph.chainId,
-    hopsFollowed: Math.max(0, ...graph.nodes.map((n) => n.depth)),
-    addressesTouched: graph.nodes.length,
-    transfersFollowed: graph.edges.length,
-    flaggedAddresses: flaggedNodes.map((n) => ({
-      address: n.address,
-      depth: n.depth,
-      label: n.watchlistHit?.label,
-    })),
-    sampleTransactionHashes: graph.edges.slice(0, 5).map((e) => e.hash),
-    lossAmount,
-    lossCurrency,
-    ic3Number: ic3Number || null,
-  };
+  const evidence = buildLetterEvidence(graph, lossAmount, lossCurrency, ic3Number);
 
   const client = new Anthropic({ apiKey });
 
@@ -56,12 +41,13 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: "user",
-          content: `Draft a formal demand/freeze-request letter for a cryptocurrency theft victim to send
-themselves to the compliance/fraud department of the exchange or platform that received their
-stolen funds. Base it only on the facts provided below — never invent an exchange name, a legal
-citation, or a fact not given. If the destination exchange isn't known from the data, address it
-generically ("To the Compliance and Fraud Department of the institution operating the wallet
-address below") rather than guessing a specific exchange.
+          content: `Draft a formal demand/freeze-request letter for a person reporting a cryptocurrency
+loss to send themselves to a compliance/fraud department they have independently identified.
+Base it only on the evidence records below — never invent an exchange name, a legal
+citation, ownership attribution, or a fact not given. Cite each on-chain or user-supplied factual
+claim with one or more evidence IDs in square brackets, such as [E1] or [E2][E4]. Never cite an
+ID that is not present. The evidence does not identify the receiving institution, so address the
+letter generically ("To the Compliance and Fraud Department") rather than guessing one.
 
 Follow the real structure such letters use: victim's incident summary, the on-chain evidence
 (seed address, relevant transaction hashes, hop path), the specific request (place an
@@ -75,8 +61,8 @@ The letter must open with this exact notice before the letter body itself:
 report with the FBI's Internet Crime Complaint Center (ic3.gov) regardless of anything else you do
 — most exchanges require law enforcement involvement to extend a hold beyond an initial review."
 
-Facts:
-${JSON.stringify(facts, null, 2)}`,
+Evidence records:
+${JSON.stringify(evidence, null, 2)}`,
         },
       ],
     });
@@ -86,7 +72,7 @@ ${JSON.stringify(facts, null, 2)}`,
       .map((block: any) => block.text)
       .join("\n");
 
-    return NextResponse.json({ letter: text });
+    return NextResponse.json({ letter: text, evidence });
   } catch (err: any) {
     return NextResponse.json({ error: err.message ?? "Letter drafting failed" }, { status: 500 });
   }

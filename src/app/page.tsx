@@ -8,7 +8,8 @@ import { TraceGraphView } from "@/components/TraceGraphView";
 import { NarrativeReport } from "@/components/NarrativeReport";
 import { SiteHeader } from "@/components/SiteHeader";
 import { LetterDrafter } from "@/components/LetterDrafter";
-import { sampleGraph, sampleChain, sampleNarrative } from "@/lib/sampleTrace";
+import { sampleGraph, sampleChain, sampleNarrative, sampleEvidence } from "@/lib/sampleTrace";
+import { EvidenceRecord } from "@/lib/evidence";
 
 export default function Home() {
   const [address, setAddress] = useState("");
@@ -19,6 +20,7 @@ export default function Home() {
   const [graph, setGraph] = useState<TraceGraph | null>(null);
   const [chain, setChain] = useState<Chain | null>(null);
   const [narrative, setNarrative] = useState<string | null>(null);
+  const [narrativeEvidence, setNarrativeEvidence] = useState<EvidenceRecord[]>([]);
   const [narrating, setNarrating] = useState(false);
   const [isSample, setIsSample] = useState(false);
 
@@ -28,6 +30,7 @@ export default function Home() {
     setError(null);
     setGraph(null);
     setNarrative(null);
+    setNarrativeEvidence([]);
     setIsSample(false);
 
     try {
@@ -48,7 +51,10 @@ export default function Home() {
         body: JSON.stringify({ graph: data.graph }),
       });
       const narData = await narRes.json();
-      if (narRes.ok) setNarrative(narData.narrative);
+      if (narRes.ok) {
+        setNarrative(narData.narrative);
+        setNarrativeEvidence(narData.evidence || []);
+      }
       setNarrating(false);
     } catch (err: any) {
       setError(err.message);
@@ -62,6 +68,7 @@ export default function Home() {
     setGraph(sampleGraph);
     setChain(sampleChain);
     setNarrative(sampleNarrative);
+    setNarrativeEvidence(sampleEvidence);
     setIsSample(true);
   }
 
@@ -133,7 +140,9 @@ export default function Home() {
 
         {graph && chain && <TraceGraphView graph={graph} chain={chain} />}
         {graph && chain && <TraceResults graph={graph} chain={chain} />}
-        {(narrative || narrating) && <NarrativeReport narrative={narrative} loading={narrating} />}
+        {(narrative || narrating) && (
+          <NarrativeReport narrative={narrative} evidence={narrativeEvidence} loading={narrating} />
+        )}
         {graph && <LetterDrafter graph={graph} isSample={isSample} />}
 
         <div className="scope-footer">

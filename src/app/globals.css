@@ -471,6 +471,56 @@ table.trace-table {
   color: var(--text);
 }
 
+.evidence-appendix {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.evidence-appendix summary {
+  color: var(--accent);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+}
+
+.evidence-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 12px;
+}
+
+.evidence-record {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 8px;
+  padding: 9px 10px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+}
+
+.evidence-id {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+}
+
+.evidence-label {
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.evidence-detail {
+  color: var(--muted-dim);
+  font-size: 0.74rem;
+  line-height: 1.5;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
 .graph-wrap {
   display: flex;
   justify-content: center;

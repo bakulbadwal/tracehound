@@ -20,7 +20,7 @@ When someone gets their crypto stolen, there's a brutal gap. The tools that actu
 | Decision | Why | Tradeoff accepted |
 |---|---|---|
 | **Serve the underserved tail, not compete with Chainalysis** | The enterprise vendors own the high end via years of subpoena-built attribution data. Competing there is hopeless; the *abandoned* segment (small victims) is real and unserved. | Deliberately smaller ceiling. Correct — it's a wedge, not a frontal assault. |
-| **LLM narration as the headline feature** | It's the step that turns raw hops into something a non-expert can act on — the actual job-to-be-done. | Adds model cost + a hallucination surface I had to constrain (narrate only from real trace facts). |
+| **LLM narration as the headline feature** | It's the step that turns raw hops into something a non-expert can act on — the actual job-to-be-done. | Adds model cost + a hallucination surface constrained with evidence IDs, visible citations, and executable evals. |
 | **Ship an aggressively honest "What this is not" section** | The fastest way to lose a victim's trust — or create legal exposure — is to overclaim. No mixer attribution, no freeze capability, no court-admissible custody. Saying so *is* the product's integrity. | Looks less impressive at a glance. But trust is the whole product in this domain; overclaiming would be malpractice. |
 | **Draft a demand letter from real trace facts only** | Gives the victim a concrete next artifact — but it never claims an exchange relationship, never claims it can compel a freeze, and always routes them to IC3. | Constrained, less "magic." Right call — a tool that overpromises legal outcomes to desperate people is harmful. |
 | **Verified-contract naming (objective) over ownership guessing (speculative)** | "This address is a verified contract named UniswapV2Router02" is a checkable fact; "this wallet belongs to Binance" is a guess. Ship facts, flag guesses. | Less coverage than a paid attribution DB. But it's honest, and honesty is the moat here. |
@@ -37,7 +37,7 @@ When someone gets their crypto stolen, there's a brutal gap. The tools that actu
 
 1. **Bridge/mixer heuristics** — the biggest capability gap; following funds through Tornado-style mixers is where most traces currently dead-end.
 2. **Community attribution data** — integrate open datasets to extend beyond OFAC-only flagging without pretending to Chainalysis-grade coverage.
-3. **Tighter agent guardrails + eval harness** — measure narration accuracy against known traces so the LLM layer is *verified*, not vibes. (This is the applied-AI heart of the product: an agent whose output is measured, not trusted.)
+3. **Calibrate the semantic judge on human labels** — the deterministic evidence/constraint eval harness is now built. The remaining work is a scrubbed real-trace set, two-person labeling, and held-out validation before semantic scores can gate releases. (The agent is measured, while the limits of that measurement stay explicit.)
 
 ## Why this write-up exists
 

@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import { TraceGraph } from "@/lib/trace";
+import { EvidenceRecord } from "@/lib/evidence";
+import { EvidenceAppendix } from "@/components/EvidenceAppendix";
 
 export function LetterDrafter({ graph, isSample }: { graph: TraceGraph; isSample: boolean }) {
   const [lossAmount, setLossAmount] = useState("");
   const [lossCurrency, setLossCurrency] = useState("USD");
   const [ic3Number, setIc3Number] = useState("");
   const [letter, setLetter] = useState<string | null>(null);
+  const [evidence, setEvidence] = useState<EvidenceRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -17,6 +20,7 @@ export function LetterDrafter({ graph, isSample }: { graph: TraceGraph; isSample
     setLoading(true);
     setError(null);
     setLetter(null);
+    setEvidence([]);
     try {
       const res = await fetch("/api/draft-letter", {
         method: "POST",
@@ -26,6 +30,7 @@ export function LetterDrafter({ graph, isSample }: { graph: TraceGraph; isSample
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Letter drafting failed");
       setLetter(data.letter);
+      setEvidence(data.evidence || []);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -90,9 +95,12 @@ export function LetterDrafter({ graph, isSample }: { graph: TraceGraph; isSample
       </div>
       {error && <div className="error">{error}</div>}
       {letter && (
-        <div className="narrative" style={{ marginTop: 16, whiteSpace: "pre-wrap" }}>
-          {letter}
-        </div>
+        <>
+          <div className="narrative" style={{ marginTop: 16, whiteSpace: "pre-wrap" }}>
+            {letter}
+          </div>
+          <EvidenceAppendix evidence={evidence} />
+        </>
       )}
     </div>
   );

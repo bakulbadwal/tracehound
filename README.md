@@ -4,7 +4,7 @@
 
 ![TraceHound screenshot](docs/screenshot.png)
 
-Agentic on-chain hack tracer, built for the gap institutional vendors (Chainalysis, TRM Labs, Elliptic) leave open: individual cases too small for those vendors to prioritize, too niche for FBI to move fast on. Built from experience working with FBI and U.S. Secret Service on a hack + tracking/referring $6M of crypto crime.
+Agentic on-chain hack tracer with executable evals, built for the gap institutional vendors (Chainalysis, TRM Labs, Elliptic) leave open: individual cases too small for those vendors to prioritize, too niche for FBI to move fast on. Built from experience working with FBI and U.S. Secret Service on a hack + tracking/referring $6M of crypto crime.
 
 Give it a seed address (e.g. an exploited contract or a hacker's wallet), and it:
 
@@ -87,6 +87,15 @@ evals/
 ```
 
 ## Evals
+
+**At a glance:**
+
+| Layer | What it does | Status |
+|---|---|---|
+| Golden set — [`evals/golden-set.json`](evals/golden-set.json) | Synthetic clean + adversarial model-output cases | Built |
+| Deterministic gate — [`evals/lib/evaluator.mjs`](evals/lib/evaluator.mjs) | Catches invented identifiers, false watchlist claims, missing citations, unsafe letter claims — `npm run eval` | Built, executable |
+| Judge rubric — [`evals/judge-prompt.md`](evals/judge-prompt.md) | Semantic failures pattern checks can't reliably catch | Designed |
+| Calibration plan — [`evals/validation-plan.md`](evals/validation-plan.md) | Labeled splits, per-violation precision/recall, re-calibration triggers | Planned — not yet validated |
 
 The obvious thing to evaluate here is the OFAC watchlist matching, and that would be a mistake:
 it's a deterministic set-membership check against `watchlist.json`. Correctness there is a **unit

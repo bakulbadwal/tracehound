@@ -192,6 +192,35 @@ storage is still future scope, below), so traces do not survive a restart.
 
 ## Roadmap ideas (not built — future scope)
 
+Ordered by signal, not by effort. The first three are about making the evidence claim hold up;
+the rest extend reach.
+
+- **Calibrate the judge rubric.** This is the highest-value gap in the repo, because it is the one
+  place the project's own standard is not yet met. [`evals/judge-prompt.md`](evals/judge-prompt.md)
+  is designed but unvalidated, and an uncalibrated judge is a confidence signal with nothing behind
+  it. [`evals/validation-plan.md`](evals/validation-plan.md) already specifies the work: labeled
+  splits, per-violation TPR/TNR against human labels, and re-calibration triggers. Until that runs,
+  the deterministic gate is the only layer that has earned trust.
+- **Watchlist staleness as evidence.** A watchlist miss is currently reported with the caveat that
+  absence is not evidence of legitimacy — true, but incomplete. The evidence record should carry
+  *when* `data/watchlist.json` was last refreshed from the OFAC SDN list and how many entries it
+  holds. A no-match against a six-month-old list is a materially weaker claim than one against a
+  list pulled this morning, and right now nothing downstream can tell those apart.
+- **Evidence integrity and deterministic replay.** Record the raw Etherscan responses behind a
+  trace and hash each evidence record over its source payload. Two payoffs: evals become runnable
+  offline against fixtures instead of live chain state, and a trace becomes re-verifiable after the
+  fact. This does not make output court-admissible — that needs chain of custody and an expert
+  witness, neither of which is a software feature — but it closes the gap between "we assert this"
+  and "you can check this."
+- **MCP resources and prompts, not only tools.** The server currently exposes tools. Exposing a
+  completed trace as an MCP *resource* with a stable URI would let a client re-read a case without
+  a tool round-trip, and shipping an MCP *prompt* that encodes the citation contract would push the
+  evidence discipline into the consuming agent's context rather than relying on it to read tool
+  descriptions carefully.
+- **Etherscan rate-limit and backoff handling.** At depth 5 with a fan-out cap of 8, a single trace
+  can issue enough calls to hit the free tier's limit mid-walk. There is no retry or backoff today,
+  so a throttled response surfaces as a failed trace rather than a slower one.
 - Incoming-transfer tracing (where funds *came from*), not just outward.
 - Bridge-hop following.
-- Persistent case storage so a trace can be revisited/exported as a report (PDF).
+- Persistent case storage so a trace can be revisited/exported as a report (PDF). Would also give
+  the MCP server's `get_evidence` a durable backing store instead of per-process memory.

@@ -1,0 +1,21 @@
+{
+  "//": "Separate from tsconfig.json because the Next config is noEmit and bundler-resolved. The MCP server is a standalone Node process, so it needs a real emit and Node's own module resolution. node16 is used (not 'node') so the MCP SDK's package exports map resolves; CJS output keeps extension-less relative imports working, matching the rest of src/.",
+  "//lib": "DOM is included for its fetch typings only. src/lib/etherscan.ts is shared with the Next app, where the DOM lib supplies RequestInit.cache ('no-store', which is meaningful to Next's fetch cache) and types Response.json() as any. Dropping DOM here would mean either weakening those types or changing etherscan.ts in a way that alters Next's caching behavior.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "node16",
+    "moduleResolution": "node16",
+    "rootDir": ".",
+    "outDir": "dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": false,
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": ["src/mcp/**/*.ts", "src/lib/**/*.ts"]
+}

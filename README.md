@@ -138,6 +138,14 @@ See [`evals/README.md`](evals/README.md) and
 
 ## Roadmap ideas (not built — future scope)
 
+- **Expose TraceHound as an MCP server** — the highest-value next step. The trace, watchlist
+  lookup, and evidence records are already clean, typed, server-side functions; wrapping them as
+  MCP tools (`trace_address`, `check_watchlist`, `get_evidence`) would let any MCP client — Claude
+  Desktop, Claude Code, another agent — run a trace and receive the *evidence records* rather than
+  prose. That matters here specifically: the eval layer's whole contract is that material claims
+  cite stable evidence IDs, so an agent-to-agent interface inherits the citation discipline instead
+  of discarding it. Scope for a v0: read-only tools, no letter drafting over MCP, and the same
+  "what this is not" constraints enforced server-side.
 - Incoming-transfer tracing (where funds *came from*), not just outward.
 - Bridge-hop following.
 - Persistent case storage so a trace can be revisited/exported as a report (PDF).

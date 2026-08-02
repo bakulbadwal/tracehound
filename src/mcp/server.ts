@@ -215,9 +215,28 @@ server.registerTool(
   }
 );
 
-// Every tool registered above is read-only. Exported so a test can assert that the set has not
-// grown a write path (notably letter drafting, which stays behind the UI on purpose).
+// Every tool registered above is read-only. This is the declared intent; registeredToolNames()
+// below reports what the server actually exposes, and tests/mcp.test.mjs fails if they diverge.
 export const READ_ONLY_TOOL_NAMES = ["trace_address", "check_watchlist", "get_evidence"] as const;
+
+// Reads the live registry rather than this file's source. That distinction matters: a tool
+// registered from an imported helper (registerLetterTools(server), say) never appears as a
+// registerTool call in this file, so any source-level check would stay green while the server
+// exposed a write path at runtime. The SDK has no public accessor for the tool set, so this
+// reaches into its internal registry — and throws rather than returning empty if that shape ever
+// changes, because a guard that silently degrades to "no tools found" would pass vacuously and
+// be worse than no guard at all.
+export function registeredToolNames(): string[] {
+  const registry = (server as unknown as { _registeredTools?: Record<string, unknown> })
+    ._registeredTools;
+  if (!registry || typeof registry !== "object") {
+    throw new Error(
+      "Cannot read the MCP tool registry — the SDK's internal shape changed. Update " +
+        "registeredToolNames() so the read-only guard in tests/mcp.test.mjs keeps working."
+    );
+  }
+  return Object.keys(registry).sort();
+}
 
 export { server };
 

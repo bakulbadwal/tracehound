@@ -1,6 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 
 import {
   validateTraceInput,
@@ -12,7 +11,7 @@ import {
   DEFAULT_DEPTH,
 } from "../dist/src/lib/validate.js";
 
-import { READ_ONLY_TOOL_NAMES } from "../dist/src/mcp/server.js";
+import { READ_ONLY_TOOL_NAMES, registeredToolNames } from "../dist/src/mcp/server.js";
 
 const VALID = "0x1234567890abcdef1234567890abcdef12345678";
 
@@ -77,25 +76,26 @@ test("isValidAddress is case-insensitive on the hex body", () => {
 });
 
 // The MCP surface is read-only by design: an agent must not be able to trigger a legal demand
-// letter unattended. This test fails loudly if a tool is ever added to the server without that
-// decision being revisited.
-test("the MCP server exposes exactly three read-only tools", async () => {
-  assert.deepEqual([...READ_ONLY_TOOL_NAMES], [
-    "trace_address",
-    "check_watchlist",
-    "get_evidence",
-  ]);
-
-  const source = await readFile(new URL("../src/mcp/server.ts", import.meta.url), "utf8");
-  const registered = [...source.matchAll(/registerTool\(\s*"([^"]+)"/g)].map((m) => m[1]);
+// letter unattended. This asserts against the server's LIVE tool registry, not against the text
+// of server.ts — a source scan would miss a tool registered from an imported helper, which is
+// exactly the path by which a write tool would realistically appear.
+test("the MCP server exposes exactly three read-only tools", () => {
+  const live = registeredToolNames();
 
   assert.deepEqual(
-    registered.sort(),
+    live,
     [...READ_ONLY_TOOL_NAMES].sort(),
-    "registered tools drifted from the declared read-only set"
+    "the server's live tool registry drifted from the declared read-only set"
   );
   assert.ok(
-    !registered.some((name) => /letter|draft|send|write/i.test(name)),
+    !live.some((name) => /letter|draft|send|write/i.test(name)),
     "MCP server must not expose a letter-drafting or write tool"
   );
+});
+
+// Guards the guard: if the SDK changes its internal shape, registeredToolNames() must throw
+// rather than return an empty list, or the test above would pass while checking nothing.
+test("the read-only guard cannot pass vacuously", () => {
+  const live = registeredToolNames();
+  assert.ok(live.length > 0, "registeredToolNames() returned nothing — the guard is not working");
 });

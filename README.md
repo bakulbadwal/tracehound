@@ -69,15 +69,19 @@ src/
     api/trace/route.ts    server-side chain walk (keeps API keys off the client)
     api/narrate/route.ts  LLM narration of the trace graph
     api/draft-letter/     LLM-drafted demand/freeze-request letter from trace facts
+  mcp/
+    server.ts             MCP stdio server: read-only trace/watchlist/evidence tools
   lib/
     etherscan.ts           Etherscan v2 API client (tx history + verified-contract lookup)
     evidence.ts            stable evidence records shared by prompts, UI, and evals
     trace.ts               BFS outward walk, fan-out capping, watchlist + contract enrichment
+    validate.ts            shared trace-input rules, so the HTTP route and MCP can't drift
     watchlist.ts            watchlist lookup
   components/
     TraceGraphView.tsx      radial SVG hop graph (hand-rolled, no charting library)
 scripts/
   update-watchlist.js      pulls the real OFAC SDN advanced XML and refreshes watchlist.json
+  mcp-smoke.mjs            end-to-end MCP wiring check over a real stdio client
 data/
   watchlist.json           known-address list — burn/zero + real OFAC-sanctioned addresses
 evals/
@@ -136,16 +140,87 @@ the model infallible; it makes claims inspectable and gives the evals a concrete
 See [`evals/README.md`](evals/README.md) and
 [`evals/validation-plan.md`](evals/validation-plan.md) for scope and calibration requirements.
 
+## MCP server
+
+TraceHound exposes its trace, watchlist, and evidence layers to any MCP client — Claude Desktop,
+Claude Code, another agent.
+
+```bash
+npm run mcp:build     # compile src/mcp + src/lib to dist/ (separate from the Next build)
+npm run mcp           # start the server on stdio
+npm run mcp:smoke     # verify the wiring end-to-end with a real MCP client
+```
+
+To use it from Claude Desktop or Claude Code, point an MCP client at the built server:
+
+```json
+{
+  "mcpServers": {
+    "tracehound": {
+      "command": "node",
+      "args": ["/absolute/path/to/tracehound/dist/src/mcp/server.js"],
+      "env": { "ETHERSCAN_API_KEY": "your-key" }
+    }
+  }
+}
+```
+
+| Tool | Returns |
+|---|---|
+| `trace_address(address, chain?, depth?)` | Trace summary plus `EvidenceRecord[]` with stable IDs, and a `traceId` |
+| `check_watchlist(address)` | Exact-address watchlist match, with the not-evidence-of-legitimacy caveat attached |
+| `get_evidence(traceId)` | The evidence records for a trace already run this session |
+
+Two design decisions worth stating, because they are the point rather than an implementation
+detail:
+
+**It returns evidence records, not prose.** The eval layer's whole contract is that every material
+claim cites a stable evidence ID. If this interface handed back a paragraph, a consuming agent
+would have nothing to cite and the citation discipline would be lost exactly where it matters
+most — at the machine-to-machine boundary, where no human is reading. So `trace_address` returns
+the same `E1`/`E2`/`E3` records the UI and the letter drafter use, and every response repeats the
+["What this is not"](#what-this-is-not) limitations inline, since an agent may never see this
+README.
+
+**It is read-only, and letter drafting is deliberately not exposed.** Producing a legal demand
+letter should not be something an agent can trigger unattended; it stays behind the UI where a
+human reads it before it exists. [`tests/mcp.test.mjs`](tests/mcp.test.mjs) fails if a tool is
+ever added to the server without that decision being revisited.
+
+Trace storage for `get_evidence` is in-memory and scoped to the server process (persistent case
+storage is still future scope, below), so traces do not survive a restart.
+
 ## Roadmap ideas (not built — future scope)
 
-- **Expose TraceHound as an MCP server** — the highest-value next step. The trace, watchlist
-  lookup, and evidence records are already clean, typed, server-side functions; wrapping them as
-  MCP tools (`trace_address`, `check_watchlist`, `get_evidence`) would let any MCP client — Claude
-  Desktop, Claude Code, another agent — run a trace and receive the *evidence records* rather than
-  prose. That matters here specifically: the eval layer's whole contract is that material claims
-  cite stable evidence IDs, so an agent-to-agent interface inherits the citation discipline instead
-  of discarding it. Scope for a v0: read-only tools, no letter drafting over MCP, and the same
-  "what this is not" constraints enforced server-side.
+Ordered by signal, not by effort. The first three are about making the evidence claim hold up;
+the rest extend reach.
+
+- **Calibrate the judge rubric.** This is the highest-value gap in the repo, because it is the one
+  place the project's own standard is not yet met. [`evals/judge-prompt.md`](evals/judge-prompt.md)
+  is designed but unvalidated, and an uncalibrated judge is a confidence signal with nothing behind
+  it. [`evals/validation-plan.md`](evals/validation-plan.md) already specifies the work: labeled
+  splits, per-violation TPR/TNR against human labels, and re-calibration triggers. Until that runs,
+  the deterministic gate is the only layer that has earned trust.
+- **Watchlist staleness as evidence.** A watchlist miss is currently reported with the caveat that
+  absence is not evidence of legitimacy — true, but incomplete. The evidence record should carry
+  *when* `data/watchlist.json` was last refreshed from the OFAC SDN list and how many entries it
+  holds. A no-match against a six-month-old list is a materially weaker claim than one against a
+  list pulled this morning, and right now nothing downstream can tell those apart.
+- **Evidence integrity and deterministic replay.** Record the raw Etherscan responses behind a
+  trace and hash each evidence record over its source payload. Two payoffs: evals become runnable
+  offline against fixtures instead of live chain state, and a trace becomes re-verifiable after the
+  fact. This does not make output court-admissible — that needs chain of custody and an expert
+  witness, neither of which is a software feature — but it closes the gap between "we assert this"
+  and "you can check this."
+- **MCP resources and prompts, not only tools.** The server currently exposes tools. Exposing a
+  completed trace as an MCP *resource* with a stable URI would let a client re-read a case without
+  a tool round-trip, and shipping an MCP *prompt* that encodes the citation contract would push the
+  evidence discipline into the consuming agent's context rather than relying on it to read tool
+  descriptions carefully.
+- **Etherscan rate-limit and backoff handling.** At depth 5 with a fan-out cap of 8, a single trace
+  can issue enough calls to hit the free tier's limit mid-walk. There is no retry or backoff today,
+  so a throttled response surfaces as a failed trace rather than a slower one.
 - Incoming-transfer tracing (where funds *came from*), not just outward.
 - Bridge-hop following.
-- Persistent case storage so a trace can be revisited/exported as a report (PDF).
+- Persistent case storage so a trace can be revisited/exported as a report (PDF). Would also give
+  the MCP server's `get_evidence` a durable backing store instead of per-process memory.
